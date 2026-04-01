@@ -1,7 +1,12 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xls;
 import 'package:file_saver/file_saver.dart';
+import 'package:file_picker/file_picker.dart';
+import 'zip_csv_parser.dart';
+// import 'data.dart' as data;
 
 void main() {
   runApp(const MyApp());
@@ -29,77 +34,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final Map<String, List<List<String>>> report = {
-    "b2b": [
-      [
-        "GSTIN",
-        "Invoice No",
-        "Invoice Type",
-        "Date",
-        "POS",
-        "Rate",
-        "Invoice Value",
-        "Taxable",
-        "CGST",
-        "SGST",
-        "IGST",
-        "Cess",
-      ],
-      [
-        "33MVHPS9823H1ZV",
-        "TB242521",
-        "Regular B2B",
-        "2025-01-25",
-        "33-TamilNadu",
-        "12.0",
-        "525.0",
-        "468.74",
-        "28.13",
-        "28.13",
-        "0.0",
-        "0.0",
-      ],
-    ],
-
-    "b2cl": [],
-
-    "b2cs": [
-      ["Supply Type", "Type", "POS", "Rate", "Taxable", "CGST", "SGST", "IGST", "Cess", "Total"],
-      ["INTRA", "OE", "33-TamilNadu", "18.0", "1210.16", "108.92", "108.92", "0.0", "0.0", "1428.0"],
-      ["INTRA", "OE", "33-TamilNadu", "28.0", "1562.5", "218.75", "218.75", "0.0", "0.0", "2000.0"],
-    ],
-
-    "nil": [
-      ["Supply Type", "Exempt Amount", "Nil Amount", "Non-GST Supply"],
-      ["Intra-State supplies to unregistered persons", "0.0", "0", "800.0"],
-    ],
-
-    "docs": [
-      ["From", "To", "Document Type", "Total Number", "Cancelled"],
-      ["VB25261", "VB25263", "Credit Note", "3", "0"],
-      ["TB242521", "TB242521", "Invoices for outward supply", "1", "0"],
-    ],
-
-    "hsn": [
-      ["Description", "UQC", "HSN Code", "Rate", "Taxable", "CGST", "SGST", "IGST", "Cess", "Total", "Qty"],
-      ["vicks", "PCS", "123", "12.0", "468.74", "28.13", "28.13", "0.0", "0.0", "525.0", "10.0"],
-    ],
-
-    "hsnB2b": [
-      ["Description", "UQC", "HSN Code", "Rate", "Taxable", "CGST", "SGST", "IGST", "Cess", "Total", "Qty"],
-      ["vicks", "PCS", "123", "12.0", "468.74", "28.13", "28.13", "0.0", "0.0", "525.0", "10.0"],
-    ],
-
-    "hsnB2c": [
-      ["Description", "UQC", "HSN Code", "Rate", "Taxable", "CGST", "SGST", "IGST", "Cess", "Total", "Qty"],
-      ["Demo Pen", "PCS", "03061720", "12.0", "31317.84", "1879.08", "1879.08", "0.0", "0.0", "35076.0", "226.0"],
-    ],
-
-    "cdnr": [],
-    "cdnur": [],
-    "exp": [],
-  };
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,7 +41,8 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
-            await exportToExcel(report);
+            final res = await loadReport();
+            await exportToExcel(res);
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(const SnackBar(content: Text('Excel exported successfully!. Check your download folder')));
@@ -117,6 +52,22 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+}
+
+Future<dynamic> loadReport() async {
+  dynamic report;
+  // Option A: from a known path
+  // report = await ZipCsvParser.parse('GSTR1.zip');
+  // return report;
+
+  // Option B: using file_picker
+  final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['zip']);
+  if (result != null) {
+    report = await ZipCsvParser.parse(result.files.single.path!);
+  } else {
+    throw Exception("File not picked");
+  }
+  return report;
 }
 
 Future<void> exportToExcel(Map<String, List<List<String>>> report) async {
